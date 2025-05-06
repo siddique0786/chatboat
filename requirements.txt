@@ -17,6 +17,7 @@ botbuilder-integration-aiohttp
 sentence-transformers
 psycopg2
 html2text
+gunicorn
 
 
 
