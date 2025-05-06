@@ -3,7 +3,7 @@ services:
     name: webpage-qa-app
     env: python
     buildCommand: ""pip install -r requirements.txt""
-    startCommand: "flask_app.py --server.port $PORT --server.enableCORS false"
+    startCommand: "app.py --server.port $PORT --server.enableCORS false"
     plan: free
     envVars:
       - key: GOOGLE_API_KEY
