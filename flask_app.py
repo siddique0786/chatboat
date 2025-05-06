@@ -1302,19 +1302,19 @@ tools = [
 agent = create_tool_calling_agent(load_llm(), tools, fixed_prompt)
 agent_executor = AgentExecutor(agent=agent, tools=tools, memory=memory, verbose=True)
 
-# ─── Insert the iframe‑allowing hook here ───────────────────────────
-@app.after_request
-def allow_iframe(response):
-    # Remove any existing X-Frame-Options header
-    response.headers.pop('X-Frame-Options', None)
-    # Allow embedding from any origin (you can lock this down to your domain)
-    response.headers['X-Frame-Options'] = 'ALLOWALL'
-    # For modern browsers, also set a CSP directive:
-    # (replace https://your-parent-domain.com with the actual domain you want)
-    response.headers['Content-Security-Policy'] = (
-        "frame-ancestors 'self' https://your-parent-domain.com"
-    )
-    return response
+# # ─── Insert the iframe‑allowing hook here ───────────────────────────
+# @app.after_request
+# def allow_iframe(response):
+#     # Remove any existing X-Frame-Options header
+#     response.headers.pop('X-Frame-Options', None)
+#     # Allow embedding from any origin (you can lock this down to your domain)
+#     response.headers['X-Frame-Options'] = 'ALLOWALL'
+#     # For modern browsers, also set a CSP directive:
+#     # (replace https://your-parent-domain.com with the actual domain you want)
+#     response.headers['Content-Security-Policy'] = (
+#         "frame-ancestors 'self' https://your-parent-domain.com"
+#     )
+#     return response
 
 def format_list_response(response: Union[str, list]) -> str:
     """
