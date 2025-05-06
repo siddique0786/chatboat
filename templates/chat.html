@@ -1,0 +1,229 @@
+<!-- templates/chat.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Pro-Serve Chatbot</title>
+  <style>
+    /* Reset */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Roboto', sans-serif;
+      background: linear-gradient(to right, #6dd5ed, #2193b0);
+      height: 100vh;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Floating Chat Toggle Button */
+    #chatToggle {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      cursor: pointer;
+      font-size: 30px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+      z-index: 1000;
+    }
+    #chatToggle:hover { background-color: #0056b3; }
+
+    /* Popup Chat Container */
+    .chat-container {
+      position: fixed;
+      bottom: 90px;
+      right: 20px;
+      width: 320px;
+      height: 480px;
+      display: none;                /* hidden by default */
+      flex-direction: column;
+      background-color: #ffffff;
+      border-radius: 10px;
+      box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+      z-index: 999;
+      resize: both;                 /* allow user resize */
+      overflow: auto;               /* enable scrolling when resized */
+      max-width: 90vw;
+      max-height: 90vh;
+    }
+    .chat-container.open { display: flex; }
+
+    .chat-header {
+      font-size: 1.4rem;
+      font-weight: bold;
+      text-align: center;
+      padding: 12px;
+      color: #ffffff;
+      background: #007bff;
+      border-radius: 10px 10px 0 0;
+      cursor: move;
+    }
+
+    .chatbox {
+      flex: 1;
+      overflow-y: auto;
+      background-color: #f9f9f9;
+      padding: 15px;
+      margin: 10px;
+      border-radius: 8px;
+      border: 1px solid #ddd;
+    }
+    .message { display: flex; margin-bottom: 12px; align-items: flex-end; }
+    .user-message {
+      background: #007bff; color: #fff;
+      border-radius: 20px 20px 0 20px;
+      padding: 8px 12px; max-width: 70%; margin-left: auto;
+      box-shadow: 0 3px 5px rgba(0, 0, 0, 0.2);
+    }
+    .bot-message {
+      /* using pre for line breaks */
+      white-space: pre-wrap;
+      background: #e0f7fa; color: #333;
+      border-radius: 20px 20px 20px 0;
+      padding: 8px 12px; max-width: 70%; margin-right: auto;
+      box-shadow: 0 3px 5px rgba(0, 0, 0, 0.1);
+    }
+
+    .chat-input-container {
+      display: flex; align-items: center;
+      padding: 10px; background-color: #f1f1f1;
+      border-radius: 0 0 10px 10px;
+    }
+    .chat-input-container input {
+      flex: 1; padding: 10px; border: none;
+      border-radius: 20px; font-size: 14px;
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+      outline: none;
+    }
+    .chat-input-container button {
+      margin-left: 8px; padding: 10px 16px;
+      border: none; background-color: #007bff;
+      color: #fff; border-radius: 20px; cursor: pointer;
+      font-size: 14px;
+    }
+    .chat-input-container button:hover { background-color: #0056b3; }
+
+    .emojis {
+      display: flex; justify-content: center;
+      padding-bottom: 8px;
+    }
+    .emoji {
+      font-size: 1.4rem; cursor: pointer; margin: 0 4px;
+      transition: transform 0.2s;
+    }
+    .emoji:hover { transform: scale(1.2); }
+  </style>
+</head>
+<body>
+
+  <!-- Floating Toggle -->
+  <button id="chatToggle">💬</button>
+
+  <!-- Chat Popup -->
+  <div class="chat-container" id="chatContainer">
+    <div class="chat-header">Co-Pilot</div>
+    <div class="chatbox" id="chatbox"></div>
+
+    <div class="emojis">
+      <span class="emoji" onclick="addEmoji('😊')">😊</span>
+      <span class="emoji" onclick="addEmoji('😎')">😎</span>
+      <span class="emoji" onclick="addEmoji('😍')">😍</span>
+      <span class="emoji" onclick="addEmoji('🤣')">🤣</span>
+      <span class="emoji" onclick="addEmoji('😢')">😢</span>
+      <span class="emoji" onclick="addEmoji('🤔')">🤔</span>
+      <span class="emoji" onclick="addEmoji('👍')">👍</span>
+    </div>
+
+    <div class="chat-input-container">
+      <input type="text" id="userQuery" placeholder="Type your query..." />
+      <button id="sendButton" onclick="sendMessage()">Send</button>
+    </div>
+  </div>
+
+  <script>
+    const chatToggle = document.getElementById('chatToggle');
+    const chatContainer = document.getElementById('chatContainer');
+    const sendButton = document.getElementById('sendButton');
+    const userQueryInput = document.getElementById('userQuery');
+
+    chatToggle.addEventListener('click', () => {
+      chatContainer.classList.toggle('open');
+      if (chatContainer.classList.contains('open')) {
+        userQueryInput.focus();
+      }
+    });
+
+    function addEmoji(emoji) {
+      userQueryInput.value += emoji;
+      userQueryInput.focus();
+    }
+
+    function sendMessage() {
+      const query = userQueryInput.value.trim();
+      if (!query) return;
+      displayUserMessage(query);
+      sendButton.disabled = true;
+      userQueryInput.disabled = true;
+      userQueryInput.value = '';
+
+      fetch('/ask', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({ query })
+      })
+      .then(res => res.json())
+      .then(data => {
+        displayBotResponse(data.output);
+      })
+      .catch(err => {
+        console.error(err);
+        displayBotResponse('Sorry, something went wrong.');
+      })
+      .finally(() => {
+        sendButton.disabled = false;
+        userQueryInput.disabled = false;
+        userQueryInput.focus();
+      });
+    }
+
+    function displayUserMessage(message) {
+      const chatbox = document.getElementById("chatbox");
+      const wrapper = document.createElement("div");
+      wrapper.className = 'message';
+      const bubble = document.createElement("div");
+      bubble.className = 'user-message';
+      bubble.textContent = message;
+      wrapper.appendChild(bubble);
+      chatbox.appendChild(wrapper);
+      chatbox.scrollTop = chatbox.scrollHeight;
+    }
+
+    function displayBotResponse(text) {
+      const chatbox = document.getElementById("chatbox");
+      const wrapper = document.createElement("div");
+      wrapper.className = 'message';
+      const bubble = document.createElement("pre");
+      bubble.className = 'bot-message';
+      bubble.textContent = text;
+      wrapper.appendChild(bubble);
+      chatbox.appendChild(wrapper);
+      chatbox.scrollTop = chatbox.scrollHeight;
+    }
+
+    userQueryInput.addEventListener('keydown', e => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        sendMessage();
+      }
+    });
+  </script>
+
+</body>
+</html>
